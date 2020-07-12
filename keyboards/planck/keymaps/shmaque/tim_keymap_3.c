@@ -61,14 +61,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * |      |      |      |      |      |      | NumLk|      |   1  |   2  |   3  | ENT  |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
-    * | TRNS | TRNS | TRNS | TRNS |      |    TRNS     |      |   =  |   0  |   .  |  *   |
+    * | TRNS | TRNS | TRNS | TRNS | TRNS |    TRNS     | TRNS |   =  |   0  |   .  |  *   |
     * `-----------------------------------------------------------------------------------'
     */
    [4] = LAYOUT_ortho_4x12(
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_P7,   KC_P8,   KC_P9,   KC_PMNS, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_P4,   KC_P5,   KC_P6,   KC_PPLS, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NLCK, KC_NO,   KC_P1,   KC_P2,   KC_P3,   KC_PENT, 
-      KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_NO,   KC_TRNS, KC_TRNS, KC_NO,   KC_PEQL, KC_P0,   KC_PDOT, KC_PAST
+      KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_PEQL, KC_P0,   KC_PDOT, KC_PAST
    ),
    /* Fn layer (F keys, pgupdown/etc...)
     * ,-----------------------------------------------------------------------------------.
@@ -90,7 +90,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    /* Goofy stuff (debug/reset/random stuff I never use */
    [6] = LAYOUT_ortho_4x12(
       DEBUG,   RESET,   AG_SWAP, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_BRID, KC_BRIU, KC_NO, 
-      TERM_ON, TERM_OFF,KC_NO,   AU_ON,   AU_OFF,  KC_NO,   KC_NO,   DF(0),   DF(1),   DF(2),   DF(4),   KC_NO, 
+      TERM_ON, TERM_OFF,KC_NO,   AU_ON,   AU_OFF,  KC_NO,   KC_NO,   DF(0),   DF(2),   DF(3),   DF(4),   KC_NO, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   AG_NORM, KC_NO,   KC_NO,   KC_NO,   KC_NO, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_MNXT, KC_VOLD, KC_VOLU, KC_MPLY
    )
