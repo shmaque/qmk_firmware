@@ -52,17 +52,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     * ,-----------------------------------------------------------------------------------.
     * |   ~  |   !  |   @  |   #  |   $  |   %  |   ^  |   &  |   *  |   (  |   )  | Bksp |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
-    * | TRNS |      |      |      |      |      |   -  |   +  |      |   [  |   ]  |   \  |
+    * | TRNS |   (  |   {  |   }  |   )  |      |   -  |   +  |      |   [  |   ]  |   \  |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
-    * | Shift|      |      |      |      |      |   _  |   =  |      |   {  |   }  | TRNS |
+    * | Shift|      |   [  |   ]  |      |      |   _  |   =  |      |   {  |   }  | TRNS |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * | TRNS | TRNS | TRNS | TRNS | MO(6)|    TRNS     | TRNS | TRNS | TRNS | TRNS | TRNS |
     * `-----------------------------------------------------------------------------------'
     */
    [3] = LAYOUT_ortho_4x12(
       KC_TILD, KC_EXLM, KC_AT,   KC_HASH, KC_DLR,  KC_PERC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_BSPC, 
-      KC_TRNS, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_MINS, KC_PLUS, KC_NO,   KC_LBRC, KC_RBRC, KC_BSLS, 
-      KC_LSFT, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_UNDS, KC_EQL,  KC_NO,   KC_LCBR, KC_RCBR, KC_TRNS,
+      KC_TRNS, KC_LPRN, KC_LCBR, KC_RCBR, KC_RPRN, KC_NO,   KC_MINS, KC_PLUS, KC_NO,   KC_LBRC, KC_RBRC, KC_BSLS, 
+      KC_LSFT, KC_NO,   KC_LBRC, KC_RBRC, KC_NO,   KC_NO,   KC_UNDS, KC_EQL,  KC_NO,   KC_LCBR, KC_RCBR, KC_TRNS,
       KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MO(6),   KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
    ),
    /* Numpad Layer
@@ -99,7 +99,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
       KC_LSFT, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_HOME, KC_PGDN, KC_PGUP, KC_END
    ),
-   /* Goofy stuff (debug/reset/random stuff I never use */
+   /* Goofy stuff (debug/reset/random stuff I never use
+    * ,-----------------------------------------------------------------------------------.
+    * | Reset|      |      |      |      |      |      |      |      | Brt- | Brt+ | Debug|
+    * |------+------+------+------+------+------+------+------+------+------+------+------|
+    * |TermOn|TermOf|      | AuOn | AuOff|      |      | DF(0)| DF[2)| DF(3)| DF(4)|      |
+    * |------+------+------+------+------+------+------+------+------+------+------+------|
+    * |      |      |      |      |      |      | AgSwp| AgNrm|      |      |      |      |
+    * |------+------+------+------+------+------+------+------+------+------+------+------|
+    * |      |      |      |      |      |             |      | Next | Vol- | Vol+ | Play |
+    * `-----------------------------------------------------------------------------------'
+    */
    [6] = LAYOUT_ortho_4x12(
       RESET,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_BRID, KC_BRIU, DEBUG, 
       TERM_ON, TERM_OFF,KC_NO,   AU_ON,   AU_OFF,  KC_NO,   KC_NO,   DF(0),   DF(2),   DF(3),   DF(4),   KC_NO, 
