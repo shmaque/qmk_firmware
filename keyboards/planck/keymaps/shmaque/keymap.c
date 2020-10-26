@@ -13,9 +13,13 @@ enum planck_layers
 
 enum custom_keycodes
 {
-   TC_LSPC = SAFE_RANGE,
+   TC_SHCAPS = SAFE_RANGE, // Approximates LSFT_T(KC_CAPSLOCK)
+   TC_LSPC,
    TC_RSPC
 };
+
+// This could be moved to config.h; hold duration for surrogate MT() handlers
+#define MOM_TAP_HOLD_MS 200
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    /* Primary layer (QWERTY)
@@ -99,7 +103,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * |      |  F11 |  F12 |      |      |      |      |      | PrSc | ScLk | Pause|  Ins |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
-    * | Caps |      |      |      |      |      |      |      |      |      |      |      |
+    * |Sh/Cps|      |      |      |      |      |      |      |      |      |      |      |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * |      |      |      |      |      |             |      | Home | PgUp | PgDn | End  |
     * `-----------------------------------------------------------------------------------'
@@ -107,7 +111,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    [_FN] = LAYOUT_ortho_4x12(
       KC_NO,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_DEL, 
       KC_NO,   KC_F11,  KC_F12,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_PSCR, KC_SLCK, KC_PAUS, KC_INS, 
-      KC_CAPSLOCK, KC_NO, KC_NO, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, 
+      /*LSFT_T(KC_CAPSLOCK),*/
+      TC_SHCAPS, KC_NO, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_HOME, KC_PGDN, KC_PGUP, KC_END
    ),
    /* Goofy stuff (debug/reset/random stuff I never use
@@ -137,12 +142,32 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #endif
 };
 
-static bool ls_masked = false;
-static bool rs_masked = false;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record)
 {
+   // Mask vars for two-keyed spacebar boards(e.g. planck rev4)
+   static bool ls_masked = false;
+   static bool rs_masked = false;
+
+   // Temp timer starting value
+   static uint16_t shcaps_time_start;
+
    switch(keycode) {
+      // Handle what LSFT_T(KC_CAPSLOCK) _should_ be doing... but actually do it reliably
+      case TC_SHCAPS:
+         if(record->event.pressed) {
+            shcaps_time_start = timer_read();
+            register_code(KC_LSFT);
+         }
+         else {
+            unregister_code(KC_LSFT);
+            if(timer_elapsed(shcaps_time_start) < MOM_TAP_HOLD_MS) {
+               tap_code(KC_CAPSLOCK);
+            }
+         }
+         break;
+
+      // Handle left/right center shift keys masked to one pseudo-event
       case TC_LSPC:
          if(!ls_masked) {
             if(record->event.pressed) {
