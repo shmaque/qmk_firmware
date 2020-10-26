@@ -11,13 +11,13 @@ enum preonic_layers
    _RANDOM
 };
 
-#if 0
 enum preonic_keycodes
 {
-   FOOKEY = SAFE_RANGE
+   TC_SHCAPS = SAFE_RANGE // Approximates LSFT_T(KC_CAPSLOCK)
 };
-#endif
 
+// This could be moved to config.h; hold duration for surrogate MT() handlers
+#define MOM_TAP_HOLD_MS 200
 
 #ifdef RGBLIGHT_ENABLE
 #define DEFAULT_RGBLIGHT_MODE RGBLIGHT_MODE_RAINBOW_SWIRL
@@ -123,7 +123,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * |      |  F11 |  F12 |      |      |      |      |      | PrSc | ScLk | Pause|  Ins |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
-    * | Caps |      |      |      |      |      |      |      |      |      |      |      |
+    * |Sh/Cps|      |      |      |      |      |      |      |      |      |      |      |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * |      |      |      |      |      |             |      | Home | PgUp | PgDn | End  |
     * `-----------------------------------------------------------------------------------'
@@ -132,7 +132,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
       KC_NO,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_NO, 
       KC_NO,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_DEL, 
       KC_NO,   KC_F11,  KC_F12,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_PSCR, KC_SLCK, KC_PAUS, KC_INS, 
-      KC_CAPSLOCK, KC_NO, KC_NO, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, 
+      /*LSFT_T(KC_CAPSLOCK),*/
+      TC_SHCAPS, KC_NO, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, 
       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_HOME, KC_PGDN, KC_PGUP, KC_END
    ),
    /* Goofy stuff (debug/reset/random stuff I never use
@@ -157,27 +158,42 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    )
 };
 
-// Boolean flag to toggle w/ capslock for ram (non-eeprom-abusing) LED controls
-static bool caps_on = false;
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+   // Temp timer starting value
+   static uint16_t shcaps_time_start;
+
    switch (keycode) {
-      // If we're toggling capslock, flip the backlight LED mode to indicate that we're in caps
-      //  since there are other indicators.
-      case KC_CAPSLOCK:
-         if (record->event.pressed) {
-            caps_on = !caps_on;
-            if(caps_on) {
-               rgblight_mode_noeeprom(RGBLIGHT_MODE_STATIC_LIGHT);
-            }
-            else {
-               rgblight_mode_noeeprom(DEFAULT_RGBLIGHT_MODE);
+      // Handle what LSFT_T(KC_CAPSLOCK) _should_ be doing... but actually do it reliably
+      case TC_SHCAPS:
+         if(record->event.pressed) {
+            shcaps_time_start = timer_read();
+            register_code(KC_LSFT);
+         }
+         else {
+            unregister_code(KC_LSFT);
+            if(timer_elapsed(shcaps_time_start) < MOM_TAP_HOLD_MS) {
+               tap_code(KC_CAPSLOCK);
             }
          }
          break;
    }
    return true;
 };
+
+// Update LED(s) based on state change (specifically ram-based / non-eeprom abusing)
+bool led_update_user(led_t led_state)
+{
+   #ifdef RGBLIGHT_ENABLE
+   static uint8_t caps_state = 0;
+   // Did caps lock state change?
+   if(caps_state != led_state.caps_lock) {
+      caps_state = led_state.caps_lock;
+      rgblight_mode_noeeprom((caps_state ? RGBLIGHT_MODE_STATIC_LIGHT : 
+                                           DEFAULT_RGBLIGHT_MODE));
+   }
+   #endif
+   return true;
+}
 
 #if 0
 void matrix_scan_user(void)
@@ -190,10 +206,10 @@ void matrix_scan_user(void)
 
 void keyboard_post_init_user(void)
 {
-// Set the default RGB configuration at power-on (w/o requiring EEPROM)
-#ifdef RGBLIGHT_ENABLE
+   // Set the default RGB configuration at power-on (w/o requiring EEPROM)
+   #ifdef RGBLIGHT_ENABLE
    rgblight_enable_noeeprom();
    rgblight_sethsv_noeeprom(HSV_RED); // Set default color to red to stick out on caps toggles
    rgblight_mode_noeeprom(DEFAULT_RGBLIGHT_MODE);
-#endif
+   #endif
 }
