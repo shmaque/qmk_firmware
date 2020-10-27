@@ -1,6 +1,10 @@
 #pragma once
 
+
 #ifdef AUDIO_ENABLE
+    // Tempos are a bit quick on the new builds...
+    #undef TEMPO_DEFAULT
+    #define TEMPO_DEFAULT 120
     #define STARTUP_SONG SONG(PREONIC_SOUND)
     // #define STARTUP_SONG SONG(NO_SOUND)
 
