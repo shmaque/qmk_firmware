@@ -188,8 +188,12 @@ bool led_update_user(led_t led_state)
    // Did caps lock state change?
    if(caps_on != led_state.caps_lock) {
       caps_on = led_state.caps_lock;
-      rgblight_mode_noeeprom((caps_on ? RGBLIGHT_MODE_STATIC_LIGHT :
-                                        DEFAULT_RGBLIGHT_MODE));
+      if(caps_on) {
+        rgblight_mode_noeeprom(RGBLIGHT_MODE_STATIC_LIGHT);
+        rgblight_sethsv_noeeprom(HSV_RED); // Set color to red to stick out on caps on
+      } else {
+        rgblight_mode_noeeprom(DEFAULT_RGBLIGHT_MODE);
+      }
    }
    #endif
    return true;
@@ -209,7 +213,6 @@ void keyboard_post_init_user(void)
    // Set the default RGB configuration at power-on (w/o requiring EEPROM)
    #ifdef RGBLIGHT_ENABLE
    rgblight_enable_noeeprom();
-   rgblight_sethsv_noeeprom(HSV_RED); // Set default color to red to stick out on caps toggles
    rgblight_mode_noeeprom(DEFAULT_RGBLIGHT_MODE);
    #endif
 }
