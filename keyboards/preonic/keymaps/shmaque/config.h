@@ -1,5 +1,10 @@
 #pragma once
 
+// comment out for black keeb - for blue/silver limit pallette
+#undef RGBLIGHT_RAINBOW_HUE_MIN
+#undef RGBLIGHT_RAINBOW_HUE_MAX
+#define RGBLIGHT_RAINBOW_HUE_MIN 115
+#define RGBLIGHT_RAINBOW_HUE_MAX 153
 
 #ifdef AUDIO_ENABLE
     // Tempos are a bit quick on the new builds...

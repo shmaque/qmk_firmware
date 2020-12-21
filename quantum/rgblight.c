@@ -81,6 +81,15 @@ static uint8_t mode_base_table[] = {
 #include "rgblight_modes.h"
 };
 
+#if defined(RGBLIGHT_EFFECT_RAINBOW_MOOD) || defined(RGBLIGHT_EFFECT_RAINBOW_SWIRL)
+#    ifndef RGBLIGHT_RAINBOW_HUE_MIN
+#        define RGBLIGHT_RAINBOW_HUE_MIN 0
+#    endif
+#    ifndef RGBLIGHT_RAINBOW_HUE_MAX
+#        define RGBLIGHT_RAINBOW_HUE_MAX 255
+#    endif
+#endif
+
 static inline int is_static_effect(uint8_t mode) { return memchr(static_effect_table, mode, sizeof(static_effect_table)) != NULL; }
 
 #ifdef RGBLIGHT_LED_MAP
@@ -305,6 +314,17 @@ void rgblight_mode_eeprom_helper(uint8_t mode, bool write_to_eeprom) {
     if (is_static_effect(rgblight_config.mode)) {
         rgblight_timer_disable();
     } else {
+        // animation_status.delta gets set later with this (every time through led task??), but
+        // if we're using a reduced max/min hue window, need to set the starting hue here
+        uint8_t submode_offset = rgblight_config.mode - rgblight_status.base_mode;
+
+        // TODO: MOOD has submodes 0,1,2 defined, but not sure what they do yet, and the helper always increments, so this will break reduced mood windows
+        // If we're using a rainbow mode, initialize the hue first to make sure it's within the acceptable window
+        if((rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_SWIRL) ||
+           (rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_MOOD)) {
+            rgblight_config.hue = ((submode_offset % 2) ? RGBLIGHT_RAINBOW_HUE_MAX : RGBLIGHT_RAINBOW_HUE_MIN);
+        }
+        dprintf("Starting hue: %03d\n", rgblight_config.hue);
         rgblight_timer_enable();
     }
 #ifdef RGBLIGHT_USE_TIMER
@@ -429,6 +449,8 @@ void rgblight_sethsv_noeeprom_old(uint8_t hue, uint8_t sat, uint8_t val) {
 void rgblight_sethsv_eeprom_helper(uint8_t hue, uint8_t sat, uint8_t val, bool write_to_eeprom) {
     if (rgblight_config.enable) {
         rgblight_status.base_mode = mode_base_table[rgblight_config.mode];
+        animation_status.delta = rgblight_config.mode - rgblight_status.base_mode;
+
         if (rgblight_config.mode == RGBLIGHT_MODE_STATIC_LIGHT) {
             // same static color
             LED_TYPE tmp_led;
@@ -494,6 +516,10 @@ void rgblight_sethsv_eeprom_helper(uint8_t hue, uint8_t sat, uint8_t val, bool w
             dprintf("rgblight set hsv [EEPROM]: %u,%u,%u\n", rgblight_config.hue, rgblight_config.sat, rgblight_config.val);
         } else {
             dprintf("rgblight set hsv [NOEEPROM]: %u,%u,%u\n", rgblight_config.hue, rgblight_config.sat, rgblight_config.val);
+        }
+        if((rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_SWIRL) ||
+           (rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_MOOD)) {
+            animation_status.current_hue = rgblight_config.hue;
         }
     }
 }
@@ -861,8 +887,6 @@ void rgblight_task(void) {
     if (rgblight_status.timer_enabled) {
         effect_func_t effect_func   = rgblight_effect_dummy;
         uint16_t      interval_time = 2000;  // dummy interval
-        uint8_t       delta         = rgblight_config.mode - rgblight_status.base_mode;
-        animation_status.delta      = delta;
 
         // static light mode, do nothing here
         if (1 == 0) {  // dummy
@@ -870,35 +894,35 @@ void rgblight_task(void) {
 #    ifdef RGBLIGHT_EFFECT_BREATHING
         else if (rgblight_status.base_mode == RGBLIGHT_MODE_BREATHING) {
             // breathing mode
-            interval_time = get_interval_time(&RGBLED_BREATHING_INTERVALS[delta], 1, 100);
+            interval_time = get_interval_time(&RGBLED_BREATHING_INTERVALS[animation_status.delta], 1, 100);
             effect_func   = rgblight_effect_breathing;
         }
 #    endif
 #    ifdef RGBLIGHT_EFFECT_RAINBOW_MOOD
         else if (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_MOOD) {
             // rainbow mood mode
-            interval_time = get_interval_time(&RGBLED_RAINBOW_MOOD_INTERVALS[delta], 5, 100);
+            interval_time = get_interval_time(&RGBLED_RAINBOW_MOOD_INTERVALS[animation_status.delta], 5, 100);
             effect_func   = rgblight_effect_rainbow_mood;
         }
 #    endif
 #    ifdef RGBLIGHT_EFFECT_RAINBOW_SWIRL
         else if (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_SWIRL) {
             // rainbow swirl mode
-            interval_time = get_interval_time(&RGBLED_RAINBOW_SWIRL_INTERVALS[delta / 2], 1, 100);
+            interval_time = get_interval_time(&RGBLED_RAINBOW_SWIRL_INTERVALS[animation_status.delta / 2], 1, 100);
             effect_func   = rgblight_effect_rainbow_swirl;
         }
 #    endif
 #    ifdef RGBLIGHT_EFFECT_SNAKE
         else if (rgblight_status.base_mode == RGBLIGHT_MODE_SNAKE) {
             // snake mode
-            interval_time = get_interval_time(&RGBLED_SNAKE_INTERVALS[delta / 2], 1, 200);
+            interval_time = get_interval_time(&RGBLED_SNAKE_INTERVALS[animation_status.delta / 2], 1, 200);
             effect_func   = rgblight_effect_snake;
         }
 #    endif
 #    ifdef RGBLIGHT_EFFECT_KNIGHT
         else if (rgblight_status.base_mode == RGBLIGHT_MODE_KNIGHT) {
             // knight mode
-            interval_time = get_interval_time(&RGBLED_KNIGHT_INTERVALS[delta], 5, 100);
+            interval_time = get_interval_time(&RGBLED_KNIGHT_INTERVALS[animation_status.delta], 5, 100);
             effect_func   = rgblight_effect_knight;
         }
 #    endif
@@ -924,14 +948,19 @@ void rgblight_task(void) {
 #    endif
 #    ifdef RGBLIGHT_EFFECT_TWINKLE
         else if (rgblight_status.base_mode == RGBLIGHT_MODE_TWINKLE) {
-            interval_time = get_interval_time(&RGBLED_TWINKLE_INTERVALS[delta % 3], 5, 50);
+            interval_time = get_interval_time(&RGBLED_TWINKLE_INTERVALS[animation_status.delta % 3], 5, 50);
             effect_func   = (effect_func_t)rgblight_effect_twinkle;
         }
 #    endif
         if (animation_status.restart) {
             animation_status.restart    = false;
             animation_status.last_timer = timer_read() - interval_time - 1;
-            animation_status.pos16      = 0;  // restart signal to local each effect
+            if((rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_MOOD) ||
+               (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_SWIRL)) {
+                animation_status.current_hue = rgblight_config.hue;
+            } else {
+                animation_status.pos16      = 0;  // restart signal to local each effect
+            }
         }
         if (timer_elapsed(animation_status.last_timer) >= interval_time) {
 #    if defined(RGBLIGHT_SPLIT) && !defined(RGBLIGHT_SPLIT_NO_ANIMATION_SYNC)
@@ -1011,11 +1040,25 @@ void rgblight_effect_rainbow_swirl(animation_status_t *anim) {
     uint8_t hue;
     uint8_t i;
 
+    // calculate max allowable span, including wrap-around
+    const uint8_t max_span = (uint8_t)((uint8_t)RGBLIGHT_RAINBOW_HUE_MAX - (uint8_t)RGBLIGHT_RAINBOW_HUE_MIN);
+    uint8_t all_leds_span = (RGBLIGHT_RAINBOW_SWIRL_RANGE > max_span ? max_span : RGBLIGHT_RAINBOW_SWIRL_RANGE);
+
     for (i = 0; i < rgblight_ranges.effect_num_leds; i++) {
-        hue = (RGBLIGHT_RAINBOW_SWIRL_RANGE / rgblight_ranges.effect_num_leds * i + anim->current_hue);
+        hue = (all_leds_span / rgblight_ranges.effect_num_leds * i + anim->current_hue);
         sethsv(hue, rgblight_config.sat, rgblight_config.val, (LED_TYPE *)&led[i + rgblight_ranges.effect_start_pos]);
     }
     rgblight_set();
+
+    //dprintf("Curr hue: %03d\n", anim->current_hue);
+    // if we've selected a span < max(uint8) (the hue wheel wrap-around range), then avoid creating a color discontinuity
+    // by reversing direction every time we hit a boundary and oscillating instead of wrapping
+    if((all_leds_span < UINT8_MAX) &&
+       ((anim->current_hue == RGBLIGHT_RAINBOW_HUE_MIN) ||
+        (anim->current_hue == RGBLIGHT_RAINBOW_HUE_MAX))) {
+        anim->delta ^= 0x01;
+        //dprintf("Changing directions (%03d[%d,%d])\n", anim->current_hue, RGBLIGHT_RAINBOW_HUE_MIN, RGBLIGHT_RAINBOW_HUE_MAX);
+    }
 
     if (anim->delta % 2) {
         anim->current_hue++;
