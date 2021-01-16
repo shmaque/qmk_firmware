@@ -1042,10 +1042,37 @@ void rgblight_effect_rainbow_swirl(animation_status_t *anim) {
 
     // calculate max allowable span, including wrap-around
     const uint8_t max_span = (uint8_t)((uint8_t)RGBLIGHT_RAINBOW_HUE_MAX - (uint8_t)RGBLIGHT_RAINBOW_HUE_MIN);
-    uint8_t all_leds_span = (RGBLIGHT_RAINBOW_SWIRL_RANGE > max_span ? max_span : RGBLIGHT_RAINBOW_SWIRL_RANGE);
+    const uint8_t all_leds_span = (RGBLIGHT_RAINBOW_SWIRL_RANGE > max_span ? max_span : RGBLIGHT_RAINBOW_SWIRL_RANGE);
 
     for (i = 0; i < rgblight_ranges.effect_num_leds; i++) {
-        hue = (all_leds_span / rgblight_ranges.effect_num_leds * i + anim->current_hue);
+        // Individual offset of the given LED (all LEDs are evenly spread across the breadth of the hue slice)
+        const uint8_t offset = all_leds_span / rgblight_ranges.effect_num_leds * i;
+        // By default, no correction is required unless we're up against the bounds
+        uint8_t correction = 0;
+
+        // If we're operating in a reduced region of the hue wheel, take special considerations to avoid
+        // jumps (discontinuities) at the edges of the selected slice
+        if(max_span < UINT8_MAX) {
+            // Are we increasing?
+            if (anim->delta % 2) {
+                if ((int8_t)((int8_t)RGBLIGHT_RAINBOW_HUE_MAX-(int8_t)anim->current_hue) < offset) {
+                    correction = 2*(offset-(RGBLIGHT_RAINBOW_HUE_MAX-anim->current_hue));
+                }
+                hue = anim->current_hue + offset - correction;
+            }
+            // Or decreasing?
+            else {
+                if ((int8_t)((int8_t)anim->current_hue-(int8_t)RGBLIGHT_RAINBOW_HUE_MIN) < offset) {
+                    correction = 2*(offset-(anim->current_hue-RGBLIGHT_RAINBOW_HUE_MIN));
+                }
+                hue = anim->current_hue - offset + correction;
+            }
+
+        // Else proceed normally w/ the swirl pattern
+        } else {
+            hue = (offset + anim->current_hue);
+        }
+
         sethsv(hue, rgblight_config.sat, rgblight_config.val, (LED_TYPE *)&led[i + rgblight_ranges.effect_start_pos]);
     }
     rgblight_set();
@@ -1060,6 +1087,7 @@ void rgblight_effect_rainbow_swirl(animation_status_t *anim) {
         //dprintf("Changing directions (%03d[%d,%d])\n", anim->current_hue, RGBLIGHT_RAINBOW_HUE_MIN, RGBLIGHT_RAINBOW_HUE_MAX);
     }
 
+    // Delta governs whether we increase or decrease from the current hue setpoint
     if (anim->delta % 2) {
         anim->current_hue++;
     } else {
