@@ -13,4 +13,7 @@ UNICODE_ENABLE = no         # Unicode
 BLUETOOTH_ENABLE = no       # Enable Bluetooth with the Adafruit EZ-Key HID
 RGBLIGHT_ENABLE = yes       # Enable WS2812 RGB underlight.
 
-SLEEP_LED_ENABLE = no      # Breathing sleep LED during USB suspend
+SLEEP_LED_ENABLE = no       # Breathing sleep LED during USB suspend
+
+# TODO: this didn't work as-is...
+UNICODE_ENABLE = no         # Enable Unicode chars
