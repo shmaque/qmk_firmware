@@ -17,3 +17,5 @@ SLEEP_LED_ENABLE = no       # Breathing sleep LED during USB suspend
 
 # TODO: this didn't work as-is...
 UNICODE_ENABLE = no         # Enable Unicode chars
+
+PREONIC_COLOR_BLUE = yes    # set theme of led restrictions... TODO there must be a cleaner way to expand these as values

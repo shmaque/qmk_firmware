@@ -1,9 +1,18 @@
 #pragma once
+//TODO: these aren't working in rules.mk - investigate def expansion in Makefile structure
+#define PLANCK_COLOR_BLUE
 
-#undef RGBLIGHT_RAINBOW_HUE_MIN
-#undef RGBLIGHT_RAINBOW_HUE_MAX
-#define RGBLIGHT_RAINBOW_HUE_MIN 47
-#define RGBLIGHT_RAINBOW_HUE_MAX 102
+#if defined PLANCK_COLOR_GREEN
+#   undef RGBLIGHT_RAINBOW_HUE_MIN
+#   undef RGBLIGHT_RAINBOW_HUE_MAX
+#   define RGBLIGHT_RAINBOW_HUE_MIN 47
+#   define RGBLIGHT_RAINBOW_HUE_MAX 102
+#elif defined PLANCK_COLOR_BLUE
+#   undef RGBLIGHT_RAINBOW_HUE_MIN
+#   undef RGBLIGHT_RAINBOW_HUE_MAX
+#   define RGBLIGHT_RAINBOW_HUE_MIN 115
+#   define RGBLIGHT_RAINBOW_HUE_MAX 175
+#endif
 
 #ifdef AUDIO_ENABLE
     //#define STARTUP_SONG SONG(PLANCK_SOUND)
