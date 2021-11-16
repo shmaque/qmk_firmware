@@ -144,7 +144,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     * |------+------+------+------+------+------+------+------+------+------+------+------|
     * |Sh/Cps| FLIP | TABL | SHRG | DISA |      |      |      |      |      |      |      |
     * |------+------+------+------+------+------+------+------+------+------+------+------|
-    * |      |      |      |      |      |             |      | Home | PgUp | PgDn | End  |
+    * | TRNS | TRNS | TRNS |      |      |             |      | Home | PgUp | PgDn | End  |
     * `-----------------------------------------------------------------------------------'
     */
    [_FN] = LAYOUT_ortho_5x12(
@@ -153,7 +153,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
       KC_NO,   KC_F11,  KC_F12,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_PSCR, KC_SLCK, KC_PAUS, KC_INS,
       /*LSFT_T(KC_CAPSLOCK),*/
       TC_SCAPS,UC_FLIP, UC_TABL, UC_SHRG, UC_DISA, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
-      KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_HOME, KC_PGDN, KC_PGUP, KC_END
+      KC_TRNS, KC_TRNS, KC_TRNS, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_HOME, KC_PGDN, KC_PGUP, KC_END
    ),
    /* Goofy stuff (debug/reset/random stuff I never use
     * ,-----------------------------------------------------------------------------------.
