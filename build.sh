@@ -14,7 +14,7 @@
 
 #Docker 
 # Plancks
-util/docker_arm_build.sh planck/rev4:shmaque &&
+#util/docker_arm_build.sh planck/rev4:shmaque &&
 util/docker_arm_build.sh planck/rev6:shmaque &&
 # Preonic
 util/docker_arm_build.sh preonic/rev3:shmaque
