@@ -81,5 +81,5 @@ fi
 	-e ALT_GET_KEYBOARDS=true \
 	-e SKIP_GIT="$SKIP_GIT" \
 	-e MAKEFLAGS="$MAKEFLAGS" \
-	qmkfm_arm \
+	qmkfm_arm_2022 \
 	make "$keyboard${keymap:+:$keymap}${target:+:$target}"
