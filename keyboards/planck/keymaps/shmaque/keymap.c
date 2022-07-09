@@ -42,6 +42,7 @@ enum custom_keycodes
 
 #ifdef RGBLIGHT_ENABLE
 #define DEFAULT_RGBLIGHT_MODE RGBLIGHT_MODE_RAINBOW_SWIRL
+//#define DEFAULT_RGBLIGHT_MODE RGBLIGHT_MODE_RAINBOW_MOOD
 #endif
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -296,6 +297,15 @@ bool led_update_user(led_t led_state)
 
 void keyboard_post_init_user(void)
 {
+   #ifdef CONSOLE_ENABLE
+   // DEBUG: if we've got the debug console enabled & debug on startup, 
+   //        enable it on boot & set a startup delay to catch init prints
+   #  ifdef DEBUG_ON_STARTUP
+      debug_enable=true;
+      wait_ms(2000);
+   #  endif
+   #endif
+
    // Set the default RGB configuration at power-on (w/o requiring EEPROM)
    #ifdef RGBLIGHT_ENABLE
    rgblight_enable_noeeprom();
