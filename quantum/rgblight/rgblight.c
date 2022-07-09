@@ -366,14 +366,33 @@ void rgblight_mode_eeprom_helper(uint8_t mode, bool write_to_eeprom) {
         rgblight_timer_disable();
     } else {
         // animation_status.delta gets set later with this (every time through led task??), but
+
+        // HOLY MOLY guys, why wouldn't you set this here vs way over in rgblight_sethsv_eeprom_helper????
+        // TL;DR: if you don't set this here, the base_mode doesn't actually get set till somebody changes the hsv value via the helper
+        //        and any index calcs into sub-variants of each base mode will fail until that happens...
+        rgblight_status.base_mode = mode_base_table[rgblight_config.mode];
+
         // if we're using a reduced max/min hue window, need to set the starting hue here
         uint8_t submode_offset = rgblight_config.mode - rgblight_status.base_mode;
 
-        // TODO: MOOD has submodes 0,1,2 defined, but not sure what they do yet, and the helper always increments, so this will break reduced mood windows
         // If we're using a rainbow mode, initialize the hue first to make sure it's within the acceptable window
-        if((rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_SWIRL) ||
-           (rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_MOOD)) {
-            rgblight_config.hue = ((submode_offset % 2) ? RGBLIGHT_RAINBOW_HUE_MAX : RGBLIGHT_RAINBOW_HUE_MIN);
+        switch(rgblight_config.mode)
+        {
+            case RGBLIGHT_MODE_last: // dummy
+#ifdef RGBLIGHT_EFFECT_RAINBOW_SWIRL
+            case RGBLIGHT_MODE_RAINBOW_SWIRL:
+#endif /* RGBLIGHT_EFFECT_RAINBOW_SWIRL */
+        // TODO: MOOD has submodes 0,1,2 defined, but not sure what they do yet, and the original helper always increments, so this may break reduced mood windows
+#ifdef RGBLIGHT_EFFECT_RAINBOW_MOOD
+            case RGBLIGHT_MODE_RAINBOW_MOOD:
+#endif /* RGBLIGHT_EFFECT_RAINBOW_MOOD */
+            {
+                dprintf("mode_eeprom_helper: I'M IN RAINBOW_SWIRL or _MOOD! (%03d[%d,%d]; mode=(base:%d, curr:%d, offset:%d)\n", rgblight_config.hue, RGBLIGHT_RAINBOW_HUE_MIN, RGBLIGHT_RAINBOW_HUE_MAX, rgblight_status.base_mode, rgblight_config.mode, submode_offset);
+                rgblight_config.hue = ((submode_offset % 2) ? RGBLIGHT_RAINBOW_HUE_MAX : RGBLIGHT_RAINBOW_HUE_MIN);
+                break;
+            }
+            default:
+                break;
         }
         dprintf("Starting hue: %03d\n", rgblight_config.hue);
         rgblight_timer_enable();
@@ -614,9 +633,16 @@ void rgblight_sethsv_eeprom_helper(uint8_t hue, uint8_t sat, uint8_t val, bool w
             dprintf("rgblight set hsv [NOEEPROM]: %u,%u,%u\n", rgblight_config.hue, rgblight_config.sat, rgblight_config.val);
         }
 #ifdef RGBLIGHT_USE_TIMER
-        if((rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_SWIRL) ||
-            (rgblight_config.mode == RGBLIGHT_MODE_RAINBOW_MOOD)) {
-             animation_status.current_hue = rgblight_config.hue;
+        const bool restricted_color_capable_mode = false
+#       ifdef RGBLIGHT_EFFECT_RAINBOW_SWIRL
+                   || (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_SWIRL)
+#       endif /* RGBLIGHT_EFFECT_RAINBOW_SWIRL */
+#       ifdef RGBLIGHT_EFFECT_RAINBOW_MOOD
+                   || (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_MOOD)
+#       endif /* RGBLIGHT_EFFECT_RAINBOW_MOOD */
+                    ;
+        if(restricted_color_capable_mode) {
+            animation_status.current_hue = rgblight_config.hue;
         }
 #endif /* RGBLIGHT_USE_TIMER */
     }
@@ -1150,8 +1176,15 @@ void rgblight_task(void) {
         if (animation_status.restart) {
             animation_status.restart    = false;
             animation_status.last_timer = sync_timer_read();
-            if((rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_MOOD) ||
-                (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_SWIRL)) {
+        const bool restricted_color_capable_mode = false
+#       ifdef RGBLIGHT_EFFECT_RAINBOW_SWIRL
+                   || (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_SWIRL)
+#       endif /* RGBLIGHT_EFFECT_RAINBOW_SWIRL */
+#       ifdef RGBLIGHT_EFFECT_RAINBOW_MOOD
+                   || (rgblight_status.base_mode == RGBLIGHT_MODE_RAINBOW_MOOD)
+#       endif /* RGBLIGHT_EFFECT_RAINBOW_MOOD */
+                    ;
+            if(restricted_color_capable_mode) {
                 animation_status.current_hue = rgblight_config.hue;
             } else {
                 animation_status.pos16      = 0;  // restart signal to local each effect
@@ -1226,8 +1259,28 @@ void rgblight_effect_breathing(animation_status_t *anim) {
 __attribute__((weak)) const uint8_t RGBLED_RAINBOW_MOOD_INTERVALS[] PROGMEM = {120, 60, 30};
 
 void rgblight_effect_rainbow_mood(animation_status_t *anim) {
+    // calculate max allowable span, including wrap-around
+    const uint8_t max_span = (uint8_t)((uint8_t)RGBLIGHT_RAINBOW_HUE_MAX - (uint8_t)RGBLIGHT_RAINBOW_HUE_MIN);
     rgblight_sethsv_noeeprom_old(anim->current_hue, rgblight_config.sat, rgblight_config.val);
-    anim->current_hue++;
+ 
+    rgblight_set();
+
+    dprintf("mood: Curr hue: %03d\n", anim->current_hue);
+    // if we've selected a span < max(uint8) (the hue wheel wrap-around range), then avoid creating a color discontinuity
+    // by reversing direction every time we hit a boundary and oscillating instead of wrapping
+    if((max_span < UINT8_MAX) &&
+       ((anim->current_hue == RGBLIGHT_RAINBOW_HUE_MIN) ||
+        (anim->current_hue == RGBLIGHT_RAINBOW_HUE_MAX))) {
+        anim->delta ^= 0x01;
+        //dprintf("mood: Changing directions (%03d[%d,%d])\n", anim->current_hue, RGBLIGHT_RAINBOW_HUE_MIN, RGBLIGHT_RAINBOW_HUE_MAX);
+    }
+
+    // Delta governs whether we increase or decrease from the current hue setpoint
+    if (anim->delta % 2) {
+        anim->current_hue++;
+    } else {
+        anim->current_hue--;
+    }
 }
 #endif
 
@@ -1280,14 +1333,15 @@ void rgblight_effect_rainbow_swirl(animation_status_t *anim) {
     }
     rgblight_set();
 
-    //dprintf("Curr hue: %03d\n", anim->current_hue);
+    dprintf("rs: Curr hue: %03d\n", anim->current_hue);
     // if we've selected a span < max(uint8) (the hue wheel wrap-around range), then avoid creating a color discontinuity
     // by reversing direction every time we hit a boundary and oscillating instead of wrapping
     if((all_leds_span < UINT8_MAX) &&
        ((anim->current_hue == RGBLIGHT_RAINBOW_HUE_MIN) ||
         (anim->current_hue == RGBLIGHT_RAINBOW_HUE_MAX))) {
         anim->delta ^= 0x01;
-        //dprintf("Changing directions (%03d[%d,%d])\n", anim->current_hue, RGBLIGHT_RAINBOW_HUE_MIN, RGBLIGHT_RAINBOW_HUE_MAX);
+        //uint8_t submode_offset = rgblight_config.mode - rgblight_status.base_mode;
+        //dprintf("rs: Changing directions (%03d[%d,%d]; delta=0x%01x; mode=(base:%d, curr:%d, offset:%d)\n", anim->current_hue, RGBLIGHT_RAINBOW_HUE_MIN, RGBLIGHT_RAINBOW_HUE_MAX, anim->delta, rgblight_status.base_mode, rgblight_config.mode, submode_offset);
     }
 
     // Delta governs whether we increase or decrease from the current hue setpoint
