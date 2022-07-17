@@ -2,6 +2,8 @@
 //TODO: these aren't working in rules.mk - investigate def expansion in Makefile structure
 #ifdef RGBLIGHT_ENABLE
 #   define PLANCK_COLOR_BLUE
+// for acrylic, optionally limit the value to tame the underglow
+//#   define RGBLIGHT_LIMIT_VAL 96
 #   define RGBLIGHT_EFFECT_RAINBOW_SWIRL
 //#   define RGBLIGHT_EFFECT_RAINBOW_MOOD
 
